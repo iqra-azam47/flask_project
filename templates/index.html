@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Desi Bites Chatbot</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden; /* Prevent body scroll */
+        }
+        .chat-container {
+            width: 100%;
+            max-width: 600px;
+            height: 90vh; /* Make the container almost full screen height */
+            background-color: #fff;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        #chat-history {
+            flex-grow: 1; /* Makes this section take up all available space */
+            padding: 20px;
+            overflow-y: auto; /* Adds a scrollbar when content overflows */
+            display: flex;
+            flex-direction: column;
+        }
+        .message-box {
+            display: flex;
+            margin-bottom: 15px;
+        }
+        .user-message {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 18px 18px 0 18px;
+            align-self: flex-end;
+            margin-left: auto;
+            max-width: 70%;
+            word-wrap: break-word;
+        }
+        .bot-message {
+            background-color: #e4e6eb;
+            color: #333;
+            padding: 10px 15px;
+            border-radius: 18px 18px 18px 0;
+            align-self: flex-start;
+            max-width: 70%;
+            word-wrap: break-word;
+        }
+        .input-container {
+            display: flex;
+            padding: 15px;
+            border-top: 1px solid #ddd;
+            background-color: #fff;
+        }
+        #user-input {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        #send-btn {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        #send-btn:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div id="chat-history">
+            <div class="message-box">
+                <div class="bot-message">Welcome to Desi Bites! How can I help you today?</div>
+            </div>
+        </div>
+        <div class="input-container">
+            <input type="text" id="user-input" placeholder="Type your message...">
+            <button id="send-btn">Send</button>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('send-btn').addEventListener('click', sendMessage);
+        document.getElementById('user-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        async function sendMessage() {
+            const userInput = document.getElementById('user-input');
+            const userMessage = userInput.value.trim();
+            if (userMessage === '') return;
+
+            const chatHistory = document.getElementById('chat-history');
+
+            // Display user message
+            const userMessageBox = document.createElement('div');
+            userMessageBox.className = 'message-box';
+            userMessageBox.innerHTML = `<div class="user-message">${userMessage}</div>`;
+            chatHistory.appendChild(userMessageBox);
+
+            // Clear input field
+            userInput.value = '';
+
+            // Scroll to bottom
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+
+            // Show a typing indicator
+            const typingIndicator = document.createElement('div');
+            typingIndicator.className = 'message-box bot-message';
+            typingIndicator.textContent = '...';
+            chatHistory.appendChild(typingIndicator);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ message: userMessage })
+                });
+
+                const data = await response.json();
+
+                // Remove typing indicator
+                chatHistory.removeChild(typingIndicator);
+
+                // Display bot message
+                const botMessageBox = document.createElement('div');
+                botMessageBox.className = 'message-box';
+                botMessageBox.innerHTML = `<div class="bot-message">${data.response}</div>`;
+                chatHistory.appendChild(botMessageBox);
+
+            } catch (error) {
+                console.error('Error:', error);
+                // Remove typing indicator on error
+                chatHistory.removeChild(typingIndicator);
+                
+                const errorBox = document.createElement('div');
+                errorBox.className = 'message-box';
+                errorBox.innerHTML = `<div class="bot-message" style="color: red;">Sorry, a server error occurred. Please try again.</div>`;
+                chatHistory.appendChild(errorBox);
+            }
+
+            // Scroll to bottom after bot reply
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+    </script>
+</body>
+</html>
